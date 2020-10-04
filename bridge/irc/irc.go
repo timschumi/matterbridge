@@ -33,8 +33,8 @@ type Birc struct {
 	FirstConnection, authDone                 bool
 	MessageDelay, MessageQueue, MessageLength int
 
-	PasteMinLines, PastePreviewLines          int
-	PasteDomain, PasteAPI, PasteAPIKey        string
+	PasteMinLines, PastePreviewLines   int
+	PasteDomain, PasteAPI, PasteAPIKey string
 
 	*bridge.Config
 }
@@ -147,23 +147,36 @@ func (b *Birc) JoinChannel(channel config.ChannelInfo) error {
 }
 
 func (b *Birc) createPaste(content string) string {
-	bodyjson := make(map[string] string)
-	bodyjson["paste"] = content
-	bodyjson["language"] = "markdown" // Just remove as much highlighting as possible
-	bodyjson["domain"] = b.PasteDomain + "/raw"
-
-	if b.PasteAPIKey != "" {
-		bodyjson["api_key"] = b.PasteAPIKey
+	type pasteRequestJson struct {
+		Paste    string `json:"paste"`
+		Language string `json:"language"`
+		Domain   string `json:"domain"`
+		ApiKey   string `json:"api_key"`
 	}
 
-	body, err := json.Marshal(bodyjson)
+	type pasteResponseJson struct {
+		err   string `json:"error"`
+		paste string `json:"paste"`
+	}
+
+	request := pasteRequestJson{
+		Paste:    content,
+		Language: "markdown",
+		Domain:   fmt.Sprintf("%s/raw", b.PasteDomain),
+	}
+
+	if b.PasteAPIKey != "" {
+		request.ApiKey = b.PasteAPIKey
+	}
+
+	body, err := json.Marshal(request)
 
 	if err != nil {
 		b.Log.Errorf("Error encoding JSON for paste: %s", err.Error())
 		return ""
 	}
 
-	resp, err := http.Post(b.PasteAPI + "/v1/paste", "application/json", bytes.NewBuffer(body))
+	resp, err := http.Post(fmt.Sprintf("%s/v1/paste", b.PasteAPI), "application/json", bytes.NewBuffer(body))
 
 	if err != nil {
 		b.Log.Errorf("Error requesting paste: %s", err.Error())
@@ -175,7 +188,7 @@ func (b *Birc) createPaste(content string) string {
 		return ""
 	}
 
-	var result map[string] string
+	result := pasteResponseJson{}
 	err = json.NewDecoder(resp.Body).Decode(&result)
 
 	if err != nil {
@@ -183,18 +196,17 @@ func (b *Birc) createPaste(content string) string {
 		return ""
 	}
 
-	if err, ok := result["error"]; ok {
-		b.Log.Errorf("Got error in paste response: %s", err)
+	if result.Err != "" {
+		b.Log.Errorf("Got error in paste response: %s", result.Error)
 		return ""
 	}
-
-	return result["paste"]
+	return result.Paste
 }
 
 func (b *Birc) Send(msg config.Message) (string, error) {
 	// ignore delete messages
 	if msg.Event == config.EventMsgDelete ||
-	   msg.ID != "" {
+		msg.ID != "" {
 		return "", nil
 	}
 
