@@ -151,12 +151,12 @@ func (b *Birc) createPaste(content string) string {
 		Paste    string `json:"paste"`
 		Language string `json:"language"`
 		Domain   string `json:"domain"`
-		ApiKey   string `json:"api_key"`
+		ApiKey   string `json:"api_key,omitempty"`
 	}
 
 	type pasteResponseJson struct {
-		err   string `json:"error"`
-		paste string `json:"paste"`
+		Err   string `json:"error"`
+		Paste string `json:"paste"`
 	}
 
 	request := pasteRequestJson{
@@ -197,7 +197,7 @@ func (b *Birc) createPaste(content string) string {
 	}
 
 	if result.Err != "" {
-		b.Log.Errorf("Got error in paste response: %s", result.Error)
+		b.Log.Errorf("Got error in paste response: %s", result.Err)
 		return ""
 	}
 	return result.Paste
