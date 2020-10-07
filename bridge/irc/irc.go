@@ -32,6 +32,7 @@ type Birc struct {
 	Local                                     chan config.Message // local queue for flood control
 	FirstConnection, authDone                 bool
 	MessageDelay, MessageQueue, MessageLength int
+	StripQuotes                               bool
 
 	PasteMinLines, PastePreviewLines   int
 	PasteDomain, PasteAPI, PasteAPIKey string
@@ -60,6 +61,7 @@ func New(cfg *bridge.Config) bridge.Bridger {
 	} else {
 		b.MessageLength = b.GetInt("MessageLength")
 	}
+	b.StripQuotes = b.GetBool("StripQuotes")
 	if b.GetInt("PasteMinLines") == 0 {
 		b.PasteMinLines = 4
 	} else {
@@ -263,8 +265,10 @@ func (b *Birc) Send(msg config.Message) (string, error) {
 			}
 		}
 
-		msg.Text = msgLines[i]
-		b.Local <- msg
+		if !b.StripQuotes || !strings.HasPrefix(msgLines[i], "> ") {
+			msg.Text = msgLines[i]
+			b.Local <- msg
+		}
 	}
 	return "fake-id", nil
 }
