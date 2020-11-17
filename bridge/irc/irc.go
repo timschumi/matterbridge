@@ -264,7 +264,7 @@ func (b *Birc) Send(msg config.Message) (string, error) {
 	}
 
 	if b.PasteDomain != "" && b.PasteCodeblocks {
-		m1 := regexp.MustCompile("(?ms)```(.*)```")
+		m1 := regexp.MustCompile("(?ms)```(.*?)```")
 
 		for true {
 			loc := m1.FindStringIndex(msg.Text)
