@@ -208,6 +208,18 @@ func (b *Birc) createPaste(content string) string {
 	return result.Paste
 }
 
+func (b *Birc) RemoveEmpty(lines []string) []string {
+	var out []string
+
+	for _, l := range lines {
+		if l != "" {
+			out = append(out, l)
+		}
+	}
+
+	return out
+}
+
 func (b *Birc) Send(msg config.Message) (string, error) {
 	// ignore delete messages
 	if msg.Event == config.EventMsgDelete ||
@@ -270,6 +282,8 @@ func (b *Birc) Send(msg config.Message) (string, error) {
 	} else {
 		msgLines = helper.GetSubLines(msg.Text, 0)
 	}
+
+	msgLines = b.RemoveEmpty(msgLines)
 
 	originalText := msg.Text
 
