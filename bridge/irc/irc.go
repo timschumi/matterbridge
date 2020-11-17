@@ -256,6 +256,8 @@ func (b *Birc) Send(msg config.Message) (string, error) {
 		msg.Text = stripmd.Strip(msg.Text)
 	}
 
+	originalText := msg.Text
+
 	if b.StripQuotes {
 		m1 := regexp.MustCompile(`(?ms)^> .*?^`)
 		msg.Text = m1.ReplaceAllString(msg.Text, "")
@@ -285,8 +287,6 @@ func (b *Birc) Send(msg config.Message) (string, error) {
 	}
 
 	msgLines = b.RemoveEmpty(msgLines)
-
-	originalText := msg.Text
 
 	for i := range msgLines {
 		if len(b.Local) >= b.MessageQueue {
